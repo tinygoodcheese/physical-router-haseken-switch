@@ -114,8 +114,7 @@ class SimpleRouter < Trema::Controller
       actions = [SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
                  SendOutPort.new(interface.port_number)]
-      #send_flow_mod_add(dpid, match: ExactMatch.new(message), actions: actions)
-      send_flow_mod_add(dpid,match: ExactMatch.new(message),instructions: Apply.new(actions))
+      send_flow_mod_add(dpid, match: ExactMatch.new(message), actions: actions)
       send_packet_out(dpid, raw_data: message.raw_data, actions: actions)
     else
       send_later(dpid,

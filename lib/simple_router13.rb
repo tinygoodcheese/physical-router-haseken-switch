@@ -27,6 +27,8 @@ class SimpleRouter < Trema::Controller
 
   def switch_ready(dpid)
     add_arp_flow_entry(dpid)
+    add_ipv4_flow_entry(dpid)
+    add_other_packets_flow_entry(dpid)
     add_default_arp_entry(dpid)
     add_default_l3_rewrite_entry(dpid)
     add_default_l3_routing_entry(dpid)
@@ -39,15 +41,16 @@ class SimpleRouter < Trema::Controller
 
   # rubocop:disable MethodLength
   def packet_in(dpid, message)
-    logger.info "start packet_in"
     return unless sent_to_router?(message)
 
     case message.data
     when Arp::Request
       packet_in_arp_request dpid, message.in_port, message.data
       add_arp_request_flow_entry(dpid,message)
+      add_l2_forwarding_flow_entry(dpid, message)
     when Arp::Reply
       packet_in_arp_reply dpid, message
+      add_l2_forwarding_flow_entry(dpid, message)
     when Parser::IPv4Packet
       packet_in_ipv4 dpid, message
     else
@@ -309,7 +312,42 @@ class SimpleRouter < Trema::Controller
               ether_type: ETHER_TYPE_ARP,
               arp_operation: Arp::Request::OPERATION,
               arp_tatget_protocol_address: interface.ip_address),
-       instructions: Apply.new(actions))
+       instructions: [Apply.new(actions),GotoTable.new(L2_REWRITE_TABLE_ID)])
+  end
+
+  def add_ipv4_flow_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: CLASSIFIER_TABLE_ID,
+      idle_timeout: 0,
+      priority: 1,
+      match: Match.new(ether_type: ETHER_TYPE_IPv4),
+      instructions: GotoTable.new(L3_REWRITE_TABLE_ID)
+    )
+  end
+
+  def add_other_packets_flow_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: CLASSIFIER_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L3_REWRITE_TABLE_ID)
+    )
+  end
+
+  def add_l2_forwarding_flow_entry(dpid, message)
+    send_flow_mod_add(
+      dpid,
+      table_id: L2_FORWARDING_TABLE_ID,
+      idle_timeout: 0,
+      priority: 1,
+      match: Match.new(
+        destination_mac_address: message.source_mac,
+      ),
+      instructions: Apply.new(SendOutPort.new(message.in_port)),
+    )
   end
 
 end

@@ -41,17 +41,21 @@ class SimpleRouter < Trema::Controller
 
   # rubocop:disable MethodLength
   def packet_in(dpid, message)
+      logger.info"packet in"
     return unless sent_to_router?(message)
 
     case message.data
     when Arp::Request
+      logger.info"Arp request"
       packet_in_arp_request dpid, message.in_port, message.data
       add_arp_request_flow_entry(dpid,message)
       add_l2_forwarding_flow_entry(dpid, message)
     when Arp::Reply
+      logger.info"Arp reply"
       packet_in_arp_reply dpid, message
       add_l2_forwarding_flow_entry(dpid, message)
     when Parser::IPv4Packet
+      logger.info"packet in ipv4"
       packet_in_ipv4 dpid, message
     else
       logger.debug "Dropping unsupported packet type: #{message.data.inspect}"
@@ -302,7 +306,7 @@ class SimpleRouter < Trema::Controller
 	   SetSourceMacAddress.new(interface.mac_address),
 	   SetArpSenderProtocolAddress.new(message.data.target_protocol_address),
            SetArpSenderHardwareAddress.new(interface.mac_address),
-	   SetDestinationMacAddress.new(message.data.source_mac)]
+	   NiciraRegMove.new(from: :arp_sender_hardware_address,to: :arp_target_hardware_address)]
     send_flow_mod_add(
        dpid,
        table_id: ARP_RESPONDER_TABLE_ID,

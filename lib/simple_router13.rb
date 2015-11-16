@@ -4,7 +4,18 @@ require 'routing_table'
 
 # Simple implementation of L3 switch in OpenFlow1.0
 # rubocop:disable ClassLength
+
 class SimpleRouter < Trema::Controller
+  CLASSIFIER_TABLE_ID    = 0
+  ARP_RESPONDER_TABLE_ID = 2
+  L3_REWRITE_TABLE_ID    = 5
+  L3_ROUTING_TABLE_ID    = 10
+  L3_FORWARDING_TABLE_ID = 15
+  L2_REWRITE_TABLE_ID    = 20
+  L2_FORWARDING_TABLE_ID = 25
+  ETHER_TYPE_ARP = 0x0806
+  ETHER_TYPE_IPv4 = 0x0800
+
   def start(_args)
     load File.join(__dir__, '..', 'simple_router.conf')
     @interfaces = Interfaces.new(Configuration::INTERFACES)
@@ -15,16 +26,26 @@ class SimpleRouter < Trema::Controller
   end
 
   def switch_ready(dpid)
-    send_flow_mod_delete(dpid, match: Match.new)
+    add_arp_flow_entry(dpid)
+    add_default_arp_entry(dpid)
+    add_default_l3_rewrite_entry(dpid)
+    add_default_l3_routing_entry(dpid)
+    add_default_l3_forwarding_entry(dpid)
+    add_default_l2_rewrite_entry(dpid)
+    add_default_l2_forwarding_entry(dpid)
+#    send_flow_mod_delete(dpid, match: Match.new)
+#    logger.info "finished switch ready"
   end
 
   # rubocop:disable MethodLength
   def packet_in(dpid, message)
+    logger.info "start packet_in"
     return unless sent_to_router?(message)
 
     case message.data
     when Arp::Request
       packet_in_arp_request dpid, message.in_port, message.data
+      add_arp_request_flow_entry(dpid,message)
     when Arp::Reply
       packet_in_arp_reply dpid, message
     when Parser::IPv4Packet
@@ -173,5 +194,123 @@ class SimpleRouter < Trema::Controller
                     raw_data: arp_request.to_binary,
                     actions: SendOutPort.new(interface.port_number))
   end
+
+  #coded by s-kojima
+  def add_arp_flow_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: CLASSIFIER_TABLE_ID,
+      idle_timeout: 0,
+      priority: 2,
+      match: Match.new(
+	ether_type: ETHER_TYPE_ARP,
+        arp_operation: Arp::Request::OPERATION,
+      ),
+      instructions: GotoTable.new(ARP_RESPONDER_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_default_arp_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: ARP_RESPONDER_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L2_REWRITE_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_default_l3_rewrite_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: L3_REWRITE_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L3_ROUTING_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_default_l3_routing_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: L3_ROUTING_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L3_FORWARDING_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_default_l3_forwarding_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: L3_FORWARDING_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L2_REWRITE_TABLE_ID)
+    )
+  end
+
+
+  #coded by s-kojima
+  def add_default_l2_rewrite_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: L2_REWRITE_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: GotoTable.new(L2_FORWARDING_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_default_l2_forwarding_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: L2_FORWARDING_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new,
+      instructions: Apply.new(SendOutPort.new(:controller)),
+    )
+  end
+
+
+  #coded by s-kojima
+  def add_arp_request_flow_entry(dpid,message)
+    interface =
+      @interfaces.find_by(port_number: message.in_port,
+                          ip_address:    
+      message.data.target_protocol_address)
+    return unless interface
+
+    actions = [
+           NiciraRegMove.new(from: :source_mac_address,
+                             to: :destination_mac_address),
+	   SetArpOperation.new(Arp::Reply::OPERATION),
+	   SetSourceMacAddress.new(interface.mac_address),
+	   SetArpSenderProtocolAddress.new(message.data.target_protocol_address),
+           SetArpSenderHardwareAddress.new(interface.mac_address),
+	   SetDestinationMacAddress.new(message.data.source_mac)]
+    send_flow_mod_add(
+       dpid,
+       table_id: ARP_RESPONDER_TABLE_ID,
+       idle_timeout: 0,
+       priority: 1,
+       match: Match.new(
+              ether_type: ETHER_TYPE_ARP,
+              arp_operation: Arp::Request::OPERATION,
+              arp_tatget_protocol_address: interface.ip_address),
+       instructions: Apply.new(actions))
+  end
+
 end
 # rubocop:enable ClassLength

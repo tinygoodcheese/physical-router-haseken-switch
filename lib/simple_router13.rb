@@ -6,8 +6,10 @@ require 'routing_table'
 # rubocop:disable ClassLength
 
 class SimpleRouter < Trema::Controller
+#数字の大きい方から小さい方へのテーブル移動は
+#bad_instructionsとかなってバグるので注意
   CLASSIFIER_TABLE_ID    = 0
-  ARP_RESPONDER_TABLE_ID = 2
+  ARP_RESPONDER_TABLE_ID = 2#だからこれも105じゃなくて小さい数字にしてる
   L3_REWRITE_TABLE_ID    = 5
   L3_ROUTING_TABLE_ID    = 10
   L3_FORWARDING_TABLE_ID = 15
@@ -41,7 +43,6 @@ class SimpleRouter < Trema::Controller
 
   # rubocop:disable MethodLength
   def packet_in(dpid, message)
-      logger.info"packet in"
     return unless sent_to_router?(message)
 
     case message.data
@@ -315,10 +316,10 @@ class SimpleRouter < Trema::Controller
        match: Match.new(
               ether_type: ETHER_TYPE_ARP,
               arp_operation: Arp::Request::OPERATION,
-              arp_tatget_protocol_address: interface.ip_address),
+              arp_target_protocol_address: interface.ip_address),
        instructions: [Apply.new(actions),GotoTable.new(L2_REWRITE_TABLE_ID)])
   end
-
+  #coded by s-kojima
   def add_ipv4_flow_entry(dpid)
     send_flow_mod_add(
       dpid,
@@ -330,6 +331,7 @@ class SimpleRouter < Trema::Controller
     )
   end
 
+  #coded by s-kojima
   def add_other_packets_flow_entry(dpid)
     send_flow_mod_add(
       dpid,
@@ -341,6 +343,7 @@ class SimpleRouter < Trema::Controller
     )
   end
 
+  #coded by s-kojima
   def add_l2_forwarding_flow_entry(dpid, message)
     send_flow_mod_add(
       dpid,

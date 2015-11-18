@@ -55,7 +55,7 @@ class SimpleRouter < Trema::Controller
     when Arp::Request
       logger.info"Arp request from #{message.data.sender_protocol_address}"
       packet_in_arp_request dpid, message.in_port, message.data
-      add_arp_request_flow_entry(dpid,message)
+#      add_arp_request_flow_entry(dpid,message)
 #    add_l2_forwarding_flow_entry(dpid, message)
     when Arp::Reply
       logger.info"Arp reply"

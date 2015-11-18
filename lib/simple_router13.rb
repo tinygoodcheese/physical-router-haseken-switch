@@ -232,11 +232,12 @@ class SimpleRouter < Trema::Controller
       idle_timeout: 0,
       priority: 0,
       match: Match.new(ether_type: ETHER_TYPE_IPv4),
-      instructions: GotoTable.new(L3_REWRITE_TABLE_ID)
+      instructions: GotoTable.new(ROUTING_TABLE_ID)
     )
   end
 
   #coded by s-kojima
+=begin
   def add_default_arp_entry(dpid)
     send_flow_mod_add(
       dpid,
@@ -247,7 +248,6 @@ class SimpleRouter < Trema::Controller
       instructions: GotoTable.new(L2_REWRITE_TABLE_ID)
     )
   end
-=begin
   #coded by s-kojima
   def add_default_l3_rewrite_entry(dpid)
     send_flow_mod_add(

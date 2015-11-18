@@ -9,12 +9,16 @@ class SimpleRouter < Trema::Controller
 #数字の大きい方から小さい方へのテーブル移動は
 #bad_instructionsとかなってバグるので注意
   CLASSIFIER_TABLE_ID    = 0
-  ARP_RESPONDER_TABLE_ID = 2#だからこれも105じゃなくて小さい数字にしてる
-  L3_REWRITE_TABLE_ID    = 5
-  L3_ROUTING_TABLE_ID    = 10
-  L3_FORWARDING_TABLE_ID = 15
-  L2_REWRITE_TABLE_ID    = 20
-  L2_FORWARDING_TABLE_ID = 25
+#  ARP_RESPONDER_TABLE_ID = 2#だからこれも105じゃなくて小さい数字にしてる
+#  L3_REWRITE_TABLE_ID    = 5
+#  L3_ROUTING_TABLE_ID    = 10
+#  L3_FORWARDING_TABLE_ID = 15
+#  L2_REWRITE_TABLE_ID    = 20
+#  L2_FORWARDING_TABLE_ID = 25
+  ARP_RESPONDER_TABLE_ID = 2
+  ROUTING_TABLE_ID  = 3
+  INTERFACE_LOOKUP_TABLE_ID = 4
+  ARP_LOOKUP_TABLE_ID = 5
   ETHER_TYPE_ARP = 0x0806
   ETHER_TYPE_IPv4 = 0x0800
 
@@ -30,13 +34,15 @@ class SimpleRouter < Trema::Controller
   def switch_ready(dpid)
     add_arp_flow_entry(dpid)
     add_ipv4_flow_entry(dpid)
-    add_other_packets_flow_entry(dpid)
-    add_default_arp_entry(dpid)
-    add_default_l3_rewrite_entry(dpid)
-    add_default_l3_routing_entry(dpid)
-    add_default_l3_forwarding_entry(dpid)
-    add_default_l2_rewrite_entry(dpid)
-    add_default_l2_forwarding_entry(dpid)
+    interface_hash = Configuration::INTERFACES
+    logger.info"#{interface_hash}"
+#    add_other_packets_flow_entry(dpid)
+#    add_default_arp_entry(dpid)
+#    add_default_l3_rewrite_entry(dpid)
+#    add_default_l3_routing_entry(dpid)
+#    add_default_l3_forwarding_entry(dpid)
+#    add_default_l2_rewrite_entry(dpid)
+#    add_default_l2_forwarding_entry(dpid)
 #    send_flow_mod_delete(dpid, match: Match.new)
 #    logger.info "finished switch ready"
   end
@@ -50,11 +56,11 @@ class SimpleRouter < Trema::Controller
       logger.info"Arp request from #{message.data.sender_protocol_address}"
       packet_in_arp_request dpid, message.in_port, message.data
       add_arp_request_flow_entry(dpid,message)
-  #    add_l2_forwarding_flow_entry(dpid, message)
+#    add_l2_forwarding_flow_entry(dpid, message)
     when Arp::Reply
       logger.info"Arp reply"
       packet_in_arp_reply dpid, message
-      add_l2_forwarding_flow_entry(dpid, message)
+#      add_l2_forwarding_flow_entry(dpid, message)
     when Parser::IPv4Packet
       logger.info"packet in ipv4"
       packet_in_ipv4 dpid, message
@@ -209,12 +215,24 @@ class SimpleRouter < Trema::Controller
       dpid,
       table_id: CLASSIFIER_TABLE_ID,
       idle_timeout: 0,
-      priority: 2,
+      priority: 0,
       match: Match.new(
 	ether_type: ETHER_TYPE_ARP,
         arp_operation: Arp::Request::OPERATION,
       ),
       instructions: GotoTable.new(ARP_RESPONDER_TABLE_ID)
+    )
+  end
+
+  #coded by s-kojima
+  def add_ipv4_flow_entry(dpid)
+    send_flow_mod_add(
+      dpid,
+      table_id: CLASSIFIER_TABLE_ID,
+      idle_timeout: 0,
+      priority: 0,
+      match: Match.new(ether_type: ETHER_TYPE_IPv4),
+      instructions: GotoTable.new(L3_REWRITE_TABLE_ID)
     )
   end
 
@@ -229,7 +247,7 @@ class SimpleRouter < Trema::Controller
       instructions: GotoTable.new(L2_REWRITE_TABLE_ID)
     )
   end
-
+=begin
   #coded by s-kojima
   def add_default_l3_rewrite_entry(dpid)
     send_flow_mod_add(
@@ -323,17 +341,6 @@ class SimpleRouter < Trema::Controller
               arp_target_protocol_address: interface.ip_address),
        instructions: [Apply.new(actions),GotoTable.new(L2_REWRITE_TABLE_ID)])
   end
-  #coded by s-kojima
-  def add_ipv4_flow_entry(dpid)
-    send_flow_mod_add(
-      dpid,
-      table_id: CLASSIFIER_TABLE_ID,
-      idle_timeout: 0,
-      priority: 1,
-      match: Match.new(ether_type: ETHER_TYPE_IPv4),
-      instructions: GotoTable.new(L3_REWRITE_TABLE_ID)
-    )
-  end
 
   #coded by s-kojima
   def add_other_packets_flow_entry(dpid)
@@ -360,6 +367,6 @@ class SimpleRouter < Trema::Controller
       instructions: Apply.new(SendOutPort.new(message.in_port)),
     )
   end
-
+=end
 end
 # rubocop:enable ClassLength

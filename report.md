@@ -1,5 +1,6 @@
 #プログラムの説明
-テーブル構成は![テーブル構成](https://github.com/handai-trema/simple_router-team_alpha/blob/master/table.png)に示すテーブル構成とした．
+作成したプログラムは![プログラム](https://github.com/handai-trema/simple_router-team_alpha/blob/master/lib/simple_router13.rb)である。
+テーブル構成は以下のテーブル構成とした．![テーブル構成](https://github.com/handai-trema/simple_router-team_alpha/blob/master/table.png)
 実装すべき動作を考えるため，host1からhost2にpingを送る場合を考えると以下のようになる．
 
 1. host1がルータにARPリクエストを送る

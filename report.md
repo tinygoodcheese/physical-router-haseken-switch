@@ -1,5 +1,5 @@
 #プログラムの説明
-作成したプログラムは![プログラム](https://github.com/handai-trema/simple_router-team_alpha/blob/master/lib/simple_router13.rb)である。
+作成した![プログラム](https://github.com/handai-trema/simple_router-team_alpha/blob/master/lib/simple_router13.rb)について説明をする。
 テーブル構成は以下のテーブル構成とした．![テーブル構成](https://github.com/handai-trema/simple_router-team_alpha/blob/master/table.png)
 実装すべき動作を考えるため，host1からhost2にpingを送る場合を考えると以下のようになる．
 

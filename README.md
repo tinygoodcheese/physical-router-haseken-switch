@@ -1,3 +1,7 @@
+参考画像  
+![image0127](https://github.com/gotooon/haseken-switch/blob/master/image/memo0127.JPG)
+
+
 Simple Router
 =============
 

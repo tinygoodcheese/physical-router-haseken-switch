@@ -104,14 +104,20 @@ class SimpleRouter < Trema::Controller
   # rubocop:disable MethodLength
   # rubocop:disable AbcSize
   def forward(dpid, message)
+    print "Source MAC: ", message.source_mac , "\n"
+    print "Destination MAC: ", message.destination_mac , "\n"
+    print "Source IP: ", message.source_ip_address , "\n"
+    print "Destination IP: ", message.destination_ip_address , "\n"
+    print "User id(ToS): ", message.ip_type_of_service , "\n" ,"\n","\n"
     next_hop = resolve_next_hop(message.destination_ip_address)
-
+    
     interface = @interfaces.find_by_prefix(next_hop)
     return if !interface || (interface.port_number == message.in_port)
 
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
-      actions = [SetSourceMacAddress.new(interface.mac_address),
+      actions = [Pio::OpenFlow10::SetTos.new(0x10),
+                 SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
                  SendOutPort.new(interface.port_number)]
       send_flow_mod_add(dpid, match: ExactMatch.new(message), instructions: Apply.new(actions))
@@ -155,7 +161,8 @@ class SimpleRouter < Trema::Controller
     destination_ip = arp_reply.sender_protocol_address
     @unresolved_packet_queue[destination_ip].each do |each|
       rewrite_mac =
-        [SetDestinationMacAddress.new(arp_reply.sender_hardware_address),
+        [Pio::OpenFlow10::SetTos.new(0x10),
+         SetDestinationMacAddress.new(arp_reply.sender_hardware_address),
          SetSourceMacAddress.new(interface.mac_address),
          SendOutPort.new(interface.port_number)]
       send_packet_out(dpid, raw_data: each.to_binary_s, actions: rewrite_mac)

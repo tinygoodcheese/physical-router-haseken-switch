@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
 require 'arp_table'
 require 'interfaces'
 require 'routing_table'
+### modified by tinygoodcheese
+require 'users'
+###
 
 # Simple implementation of L3 switch in OpenFlow1.0
 # rubocop:disable ClassLength
@@ -11,6 +15,9 @@ class SimpleRouter < Trema::Controller
     @arp_table = ArpTable.new
     @routing_table = RoutingTable.new(Configuration::ROUTES)
     @unresolved_packet_queue = Hash.new { [] }
+### modified by tinygoodcheese
+    @users = Users.new('users.conf')
+###
     logger.info "#{name} started."
   end
 
@@ -37,9 +44,12 @@ class SimpleRouter < Trema::Controller
 
   # rubocop:disable MethodLength
   def packet_in_arp_request(dpid, in_port, arp_request)
-    interface =
-      @interfaces.find_by(port_number: in_port,
-                          ip_address: arp_request.target_protocol_address)
+###modified by tinygoodcheese
+    interface = @interfaces.find_by(dpid: dpid,
+                                    port_number: in_port,
+                                    ip_address: arp_request.target_protocol_address)
+##      @interfaces.find_by(port_number: in_port,
+##                          ip_address: arp_request.target_protocol_address)
     return unless interface
     send_packet_out(
       dpid,
@@ -59,7 +69,10 @@ class SimpleRouter < Trema::Controller
                       message.source_mac)
     flush_unsent_packets(dpid,
                          message.data,
-                         @interfaces.find_by(port_number: message.in_port))
+                         ### modified by tinygoodcheese
+                         @interfaces.find_by(dpid: dpid,
+                                             port_number: message.in_port)
+ ##                      @interfaces.find_by(port_number: message.in_port)  )
   end
 
   def packet_in_ipv4(dpid, message)
@@ -82,7 +95,10 @@ class SimpleRouter < Trema::Controller
                       actions: SendOutPort.new(message.in_port))
     else
       send_later(dpid,
-                 interface: @interfaces.find_by(port_number: message.in_port),
+                 ### modified by tinygoodcheese
+                 interface: @interfaces.find_by(dpid: dpid,
+                                                port_number: message.in_port),
+                 ## interface: @interfaces.find_by(port_number: message.in_port),
                  destination_ip: message.source_ip_address,
                  data: create_icmp_reply(icmp_request))
     end
@@ -93,12 +109,18 @@ class SimpleRouter < Trema::Controller
 
   def sent_to_router?(message)
     return true if message.destination_mac.broadcast?
-    interface = @interfaces.find_by(port_number: message.in_port)
+### modified by tinygoodcheese
+    interface = @interfaces.find_by(dpid: dpid
+                                    port_number: message.in_port)
+##    interface = @interfaces.find_by(port_number: message.in_port)
     interface && interface.mac_address == message.destination_mac
   end
 
   def forward?(message)
-    !@interfaces.find_by(ip_address: message.destination_ip_address)
+### modified by tinygoodcheese
+    !@interfaces.find_by(dpid: dpid
+                         ip_address: message.destination_ip_address)
+##   !@interfaces.find_by(ip_address: message.destination_ip_address)
   end
 
   # rubocop:disable MethodLength
@@ -110,13 +132,25 @@ class SimpleRouter < Trema::Controller
     print "Destination IP: ", message.destination_ip_address , "\n"
     print "User id(ToS): ", message.ip_type_of_service , "\n" ,"\n","\n"
     next_hop = resolve_next_hop(message.destination_ip_address)
-    
-    interface = @interfaces.find_by_prefix(next_hop)
+
+### modified by tinygoodcheese
+    if message.ip_type_of_service == 0x00 then
+      interface = @interfaces.find_by(dpid).find_by_prefix(next_hop)
+    elsif message.ip_type_of_service != 0x01 then
+      dest_mac = @users.find_by(user_id: message.ip_type_of_service,
+                                destination_ip_address: next_hop).mac_address
+      interface = @interfaces.find_by(mac_address: dest_mac)
+      ###
+    end
+##    interface = @interfaces.find_by_prefix(next_hop)
     return if !interface || (interface.port_number == message.in_port)
 
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
-      actions = [Pio::OpenFlow10::SetTos.new(0x10),
+      ### modified by tinygoodcheese
+      user_id = @users.find_by(destination_ip_address: message.destination_ip_address,
+                               source_mac: interface.mac_address).user_id
+      actions = [Pio::OpenFlow10::SetTos.new(tos: user_id),
                  SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
                  SendOutPort.new(interface.port_number)]
@@ -133,11 +167,16 @@ class SimpleRouter < Trema::Controller
   # rubocop:enable MethodLength
 
   def resolve_next_hop(destination_ip_address)
-    interface = @interfaces.find_by_prefix(destination_ip_address)
+### modified by tinygoodcheese
+    interface = @interfaces.find_subset_by(dpid).find_by_prefix(destination_ip_address)
+   ## interface = @interfaces.find_by_prefix(destination_ip_address)
     if interface
       destination_ip_address
     else
-      @routing_table.lookup(destination_ip_address)
+### modified by tinygoodcheese
+      @routing_table.lookup(dpid: dpid,
+                            destination_ip_address)
+##      @routing_table.lookup(destination_ip_address)
     end
   end
 
@@ -160,8 +199,12 @@ class SimpleRouter < Trema::Controller
   def flush_unsent_packets(dpid, arp_reply, interface)
     destination_ip = arp_reply.sender_protocol_address
     @unresolved_packet_queue[destination_ip].each do |each|
+      ### modified by tinygoodcheese
+      user_id = @users.find_by(destination_ip_address: destination_ip,
+                                  source_mac: interface.mac_address).user_id
+      ### modified by tinygoodcheese
       rewrite_mac =
-        [Pio::OpenFlow10::SetTos.new(0x10),
+         [Pio::OpenFlow10::SetTos.new(tos: user_id),
          SetDestinationMacAddress.new(arp_reply.sender_hardware_address),
          SetSourceMacAddress.new(interface.mac_address),
          SendOutPort.new(interface.port_number)]

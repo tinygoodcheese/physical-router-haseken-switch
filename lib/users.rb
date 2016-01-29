@@ -25,6 +25,7 @@ class Users
 				next if line =~ /^#/	# comment out skip
 			
 				words = line.split
+				@list = Array.new()
 				@list.push(User.new(user_id: words[0], ip_address: words[1], mac_address: words[2]))
 			end
 		end

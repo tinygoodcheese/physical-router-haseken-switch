@@ -27,7 +27,7 @@ class SimpleRouter < Trema::Controller
 
   # rubocop:disable MethodLength
   def packet_in(dpid, message)
-    return unless sent_to_router?(message)
+    return unless sent_to_router?(dpid,message)
 
     case message.data
     when Arp::Request
@@ -76,7 +76,9 @@ class SimpleRouter < Trema::Controller
   end
 
   def packet_in_ipv4(dpid, message)
-    if forward?(message)
+    ### modified by tgc
+    if forward?(dpid,message)
+    ##if forward?(message)
       forward(dpid, message)
     elsif message.ip_protocol == 1
       icmp = Icmp.read(message.raw_data)
@@ -106,8 +108,9 @@ class SimpleRouter < Trema::Controller
   # rubocop:enable MethodLength
 
   private
-
-  def sent_to_router?(message)
+### modified by tinygoodcheese
+  def sent_to_router?(dpid, message)
+##  def sent_to_router?(message)
     return true if message.destination_mac.broadcast?
 ### modified by tinygoodcheese
     interface = @interfaces.find_by(dpid: dpid,
@@ -116,7 +119,7 @@ class SimpleRouter < Trema::Controller
     interface && interface.mac_address == message.destination_mac
   end
 
-  def forward?(message)
+  def forward?(dpid, message)
 ### modified by tinygoodcheese
     !@interfaces.find_by(dpid: dpid,
                          ip_address: message.destination_ip_address)
@@ -174,7 +177,17 @@ class SimpleRouter < Trema::Controller
 ###  def resolve_next_hop(destination_ip_address)
 ###
 ### modified by tinygoodcheese
-    interface = @interfaces.find_subset_by(dpid).find_by_prefix(destination_ip_address)
+
+  interfaces_subset = @interfaces.find_subset_by(dpid)
+  interfaces = Interfaces.new()
+  interfaces_subset.each do |interface|
+    interfaces.add(dpid: interface.dpid,
+                   port: interface.port_number,
+                   mac_address: interface.mac_address,
+                   ip_address: interface.ip_address,
+                   netmask_length: interface.netmask_length)
+  end
+  interface = interfaces.find_by_prefix(destination_ip_address)
    ## interface = @interfaces.find_by_prefix(destination_ip_address)
     if interface
       destination_ip_address

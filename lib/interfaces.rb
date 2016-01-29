@@ -25,10 +25,17 @@ end
 
 # List of network interfaces
 class Interfaces
+
+  attr_reader :list
+
   def initialize(interfaces = [])
     @list = interfaces.map do |each|
       Interface.new(each)
     end
+  end
+
+  def add(options)
+    @list.push(Interface.new(options))
   end
 
   def find_by(queries)
@@ -41,12 +48,12 @@ class Interfaces
 
 ### modified by tinygoodcheese
 
-  def find_subset_by(queries)
-    queries.inject(@list) do |memo, (attr, value)|
-      memo.find_all do |interface|
-        interface.__send__(attr) == value
+  def find_subset_by(dpid)
+#    queries.inject(@list) do |memo, (attr, value)|
+      @list.find_all do |interface|
+        interface.dpid == dpid
       end
-    end
+    #end
   end
 ###
 

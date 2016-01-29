@@ -1,23 +1,19 @@
 # by yyynishi
-require 'active_support/core_ext/class/attribute_accessors'
-#require 'json'
-#require 'path_manager'
-#require 'port'
-#require 'interfaces'
+require 'pio'
 
 # IaaS VM
 class User
 	include Pio
 
-  attr_reader :user_id
-  attr_reader :ip_address
-  attr_reader :mac_address
+	attr_reader :user_id
+	attr_reader :ip_address
+	attr_reader :mac_address
 
-  def initialize(options)
-    @dpid = options.fetch(:user_id)
-    @ip_address = IPv4Address.new(options.fetch(:ip_address))
-    @mac_address = Mac.new(options.fetch(:mac_address))
-  end
+	def initialize(options)
+		@user_id = options.fetch(:user_id)
+		@ip_address = IPv4Address.new(options.fetch(:ip_address))
+		@mac_address = Mac.new(options.fetch(:mac_address))
+	end
 end
 
 class Users
@@ -34,9 +30,11 @@ class Users
 		end
 	end
 
-	def find_by(ip_address, mac_address)
-	end
-
-	def find_by(user_id, ip_address)
+	def find_by(queries)
+		queries.inject(@list) do |memo, (attr, value)|
+	    	memo.find_all do |user|
+	        	user.__send__(attr) == value
+	      	end
+	    end.first
 	end
 end

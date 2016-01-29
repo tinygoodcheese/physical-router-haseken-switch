@@ -4,12 +4,18 @@ require 'pio'
 class Interface
   include Pio
 
+### modified by tinygoodcheese
+  attr_reader :dpid
+###  
   attr_reader :mac_address
   attr_reader :ip_address
   attr_reader :netmask_length
   attr_reader :port_number
 
   def initialize(options)
+### modified by tinygoodcheese
+    @dpid = options.fetch(:dpid)
+###
     @port_number = options.fetch(:port)
     @mac_address = Mac.new(options.fetch(:mac_address))
     @ip_address = IPv4Address.new(options.fetch(:ip_address))
@@ -32,6 +38,17 @@ class Interfaces
       end
     end.first
   end
+
+### modified by tinygoodcheese
+
+  def find_subset_by(queries)
+    queries.inject(@list) do |memo, (attr, value)|
+      memo.find_all do |interface|
+        interface.__send__(attr) == value
+      end
+    end
+  end
+###
 
   def find_by_prefix(ip_address)
     @list.find do |each|

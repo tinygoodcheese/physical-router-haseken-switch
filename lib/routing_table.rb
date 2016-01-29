@@ -1,3 +1,4 @@
+# -*- coding: undecided -*-
 require 'pio'
 
 # Routing table
@@ -12,6 +13,8 @@ class RoutingTable
   end
 
   def add(options)
+### modified by tinygoodcheese
+  ##  保留
     netmask_length = options.fetch(:netmask_length)
     prefix = IPv4Address.new(options.fetch(:destination)).mask(netmask_length)
     @db[netmask_length][prefix.to_i] = IPv4Address.new(options.fetch(:next_hop))

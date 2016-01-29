@@ -71,7 +71,7 @@ class SimpleRouter < Trema::Controller
                          message.data,
                          ### modified by tinygoodcheese
                          @interfaces.find_by(dpid: dpid,
-                                             port_number: message.in_port)
+                                             port_number: message.in_port))
  ##                      @interfaces.find_by(port_number: message.in_port)  )
   end
 
@@ -110,7 +110,7 @@ class SimpleRouter < Trema::Controller
   def sent_to_router?(message)
     return true if message.destination_mac.broadcast?
 ### modified by tinygoodcheese
-    interface = @interfaces.find_by(dpid: dpid
+    interface = @interfaces.find_by(dpid: dpid,
                                     port_number: message.in_port)
 ##    interface = @interfaces.find_by(port_number: message.in_port)
     interface && interface.mac_address == message.destination_mac
@@ -118,7 +118,7 @@ class SimpleRouter < Trema::Controller
 
   def forward?(message)
 ### modified by tinygoodcheese
-    !@interfaces.find_by(dpid: dpid
+    !@interfaces.find_by(dpid: dpid,
                          ip_address: message.destination_ip_address)
 ##   !@interfaces.find_by(ip_address: message.destination_ip_address)
   end
@@ -131,7 +131,10 @@ class SimpleRouter < Trema::Controller
     print "Source IP: ", message.source_ip_address , "\n"
     print "Destination IP: ", message.destination_ip_address , "\n"
     print "User id(ToS): ", message.ip_type_of_service , "\n" ,"\n","\n"
-    next_hop = resolve_next_hop(message.destination_ip_address)
+    ###modified by tinygoodcheese
+    next_hop = resolve_next_hop(dpid,message.destination_ip_address)
+##   next_hop = resolve_next_hop(message.destination_ip_address)
+  ###
 
 ### modified by tinygoodcheese
     if message.ip_type_of_service == 0x00 then
@@ -166,7 +169,10 @@ class SimpleRouter < Trema::Controller
   # rubocop:enable AbcSize
   # rubocop:enable MethodLength
 
-  def resolve_next_hop(destination_ip_address)
+### modified by tinygoodcheese
+  def resolve_next_hop(dpid, destination_ip_address)
+###  def resolve_next_hop(destination_ip_address)
+###
 ### modified by tinygoodcheese
     interface = @interfaces.find_subset_by(dpid).find_by_prefix(destination_ip_address)
    ## interface = @interfaces.find_by_prefix(destination_ip_address)
@@ -174,7 +180,7 @@ class SimpleRouter < Trema::Controller
       destination_ip_address
     else
 ### modified by tinygoodcheese
-      @routing_table.lookup(dpid: dpid,
+      @routing_table.lookup(dpid,
                             destination_ip_address)
 ##      @routing_table.lookup(destination_ip_address)
     end

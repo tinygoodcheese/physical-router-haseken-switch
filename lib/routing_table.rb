@@ -18,20 +18,18 @@ class RoutingTable
     dpid = options.fetch(:dpid)
     netmask_length = options.fetch(:netmask_length)
     prefix = IPv4Address.new(options.fetch(:destination)).mask(netmask_length)
-    @db[dpid.hex][netmask_length][prefix.to_i] = IPv4Address.new(options.fetch(:next_hop))
+    @db[dpid][netmask_length][prefix.to_i] = IPv4Address.new(options.fetch(:next_hop))
   end
 
   # modified by uuunishi, dpid is added
   def lookup(dpid, destination_ip_address)
      MAX_NETMASK_LENGTH.downto(0).each do |each|
         prefix = destination_ip_address.mask(each)
-        entry = @db[dpid.hex][each][prefix.to_i]
+        entry = @db[dpid][each][prefix.to_i]
         return entry if entry
       end
-      nil
-    end
+      nil 
   end
-
 #  def lookup(destination_ip_address)
 #    MAX_NETMASK_LENGTH.downto(0).each do |each|
 #      prefix = destination_ip_address.mask(each)

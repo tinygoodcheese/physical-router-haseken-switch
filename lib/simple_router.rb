@@ -141,10 +141,23 @@ class SimpleRouter < Trema::Controller
 
 ### modified by tinygoodcheese
     if message.ip_type_of_service == 0x00 then
-      interface = @interfaces.find_by(dpid).find_by_prefix(next_hop)
-    elsif message.ip_type_of_service != 0x01 then
+      ### modified by yyynishi
+      interfaces_subset = @interfaces.find_subset_by(dpid)
+      interfaces = Interfaces.new()
+      interfaces_subset.each do |interface|
+        interfaces.add(dpid: interface.dpid,
+                     port: interface.port_number,
+                     mac_address: interface.mac_address,
+                     ip_address: interface.ip_address,
+                     netmask_length: interface.netmask_length)
+      end
+      interface = interfaces.find_by_prefix(next_hop)
+      #interface = @interfaces.find_by(dpid).find_by_prefix(next_hop)
+    ### modified by yyynishi
+    elsif message.ip_type_of_service != 0x00 then
+    #elsif message.ip_type_of_service != 0x01 then
       dest_mac = @users.find_by(user_id: message.ip_type_of_service,
-                                destination_ip_address: next_hop).mac_address
+                                ip_address: next_hop).mac_address
       interface = @interfaces.find_by(mac_address: dest_mac)
       ###
     end
@@ -154,8 +167,8 @@ class SimpleRouter < Trema::Controller
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
       ### modified by tinygoodcheese
-      user_id = @users.find_by(destination_ip_address: message.destination_ip_address,
-                               source_mac: interface.mac_address).user_id
+      user_id = @users.find_by(ip_address: message.destination_ip_address,
+                               mac_address: interface.mac_address).user_id
       actions = [Pio::OpenFlow10::SetTos.new(tos: user_id),
                  SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
@@ -219,8 +232,30 @@ class SimpleRouter < Trema::Controller
     destination_ip = arp_reply.sender_protocol_address
     @unresolved_packet_queue[destination_ip].each do |each|
       ### modified by tinygoodcheese
-      user_id = @users.find_by(destination_ip_address: destination_ip,
-                                  source_mac: interface.mac_address).user_id
+
+
+      print 'dpid:', dpid, "\n"
+      print 'destination_ip:', destination_ip, "\n"
+      print 'interface.mac_address:', interface.mac_address, "\n"
+      @users.list.each do |user|
+        print 'user:', user, "\n"
+      end
+
+      ### modified by yyynishi
+      user_id = @users.find_by(ip_address: each.source_ip_address,
+                               mac_address: each.source_mac)
+      #user_id = @users.find_by(ip_address: destination_ip,
+      #                           mac_address: interface.mac_address).user_id
+
+      
+
+      
+      print 'user_id:', user_id, "\n"
+      print 'source_ip_address', each.source_ip_address, "\n"
+      print 'source_mac', each.source_mac, "\n"
+
+
+      
       ### modified by tinygoodcheese
       rewrite_mac =
          [Pio::OpenFlow10::SetTos.new(tos: user_id),

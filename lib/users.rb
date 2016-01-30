@@ -17,7 +17,10 @@ class User
 end
 
 class Users
+
+	attr_reader :list
 	def initialize(filename)
+		@list = Array.new()
 		File.open(filename) do |file|
 			file.each_line do |line| # user_id	ip_address	mac_address
 				next if file.lineno == 1	# line 1 skip
@@ -25,7 +28,6 @@ class Users
 				next if line =~ /^#/	# comment out skip
 			
 				words = line.split
-				@list = Array.new()
 				@list.push(User.new(user_id: words[0], ip_address: words[1], mac_address: words[2]))
 			end
 		end
@@ -38,4 +40,11 @@ class Users
 	      	end
 	    end.first
 	end
+
+	# modified by yyynishi
+	#def find_by_mac(mac_address)
+	#	@list.find do |user|
+	#		user.mac_address == mac_address
+	#	end
+	#end
 end

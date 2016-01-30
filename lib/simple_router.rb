@@ -156,9 +156,12 @@ class SimpleRouter < Trema::Controller
     ### modified by yyynishi
     elsif message.ip_type_of_service != 0x00 then
     #elsif message.ip_type_of_service != 0x01 then
-      dest_mac = @users.find_by(user_id: message.ip_type_of_service,
-                                ip_address: next_hop).mac_address
-      interface = @interfaces.find_by(mac_address: dest_mac)
+      port = @users.find_by(user_id: message.ip_type_of_service,
+                            ip_address: next_hop).port_number
+
+      interface = @interfaces.find_by(dpid: dpid,
+                                      port_number: port)
+      ##interface = @interfaces.find_by(mac_address: dest_mac)
       ###
     end
 ##    interface = @interfaces.find_by_prefix(next_hop)
@@ -200,7 +203,7 @@ class SimpleRouter < Trema::Controller
                    ip_address: interface.ip_address,
                    netmask_length: interface.netmask_length)
   end
-  interface = interfaces.find_by_prefix(destination_ip_address)
+    interface = interfaces.find_by_prefix(destination_ip_address)
    ## interface = @interfaces.find_by_prefix(destination_ip_address)
     if interface
       destination_ip_address
@@ -244,9 +247,6 @@ class SimpleRouter < Trema::Controller
       ### modified by yyynishi
       user_id = @users.find_by(ip_address: each.source_ip_address,
                                mac_address: each.source_mac)
-      #user_id = @users.find_by(ip_address: destination_ip,
-      #                           mac_address: interface.mac_address).user_id
-
       
 
       

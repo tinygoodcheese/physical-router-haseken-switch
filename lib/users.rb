@@ -7,12 +7,14 @@ class User
 
 	attr_reader :user_id
 	attr_reader :ip_address
-	attr_reader :mac_address
+	attr_reader :dpid
+	attr_reader :port_number
 
 	def initialize(options)
 		@user_id = options.fetch(:user_id)
 		@ip_address = IPv4Address.new(options.fetch(:ip_address))
-		@mac_address = Mac.new(options.fetch(:mac_address))
+		@dpid = Mac.new(options.fetch(:dpid))
+		@port_number = Mac.new(options.fetch(:port_number))
 	end
 end
 
@@ -28,7 +30,7 @@ class Users
 				next if line =~ /^#/	# comment out skip
 			
 				words = line.split
-				@list.push(User.new(user_id: words[0], ip_address: words[1], mac_address: words[2]))
+				@list.push(User.new(user_id: words[0], ip_address: words[1], dpid: words[2], port_number: words[3]))
 			end
 		end
 	end

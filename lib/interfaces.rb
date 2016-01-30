@@ -41,7 +41,7 @@ class Interfaces
   def find_by(queries)
     queries.inject(@list) do |memo, (attr, value)|
       memo.find_all do |interface|
-        interface.__send__(attr) == value
+          interface.__send__(attr) == value
       end
     end.first
   end

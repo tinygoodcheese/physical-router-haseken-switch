@@ -46,14 +46,13 @@ class Users
 	def find_by_user_id_and_ip(user_id, ip_address)
 		step1 = 
 		@list.find_all do |user|
-			user.user_id == user_id
+			user.user_id.hex.to_i == user_id.to_i
 		end
-		print "step1:",step1,"\n"
 		step2 =
 		step1.find do |user|
 			user.ip_address == ip_address
 		end
-		print "step2:",step2,"\n"
+		return step2
 	end
 
 	def find_by_ip_and_port(ip_address, port_number)
@@ -61,16 +60,11 @@ class Users
 		@list.find_all do |user|
 			user.ip_address == ip_address
 		end
-#		print "step1_portnumber:",step1[0].port_number,"\n"
-#		print "arg_portnumber:",port_number,"\n"
 		step2 =
 		step1.find do |user|
-			print "step1_portnumber:",user.port_number,"\n"
-			print "arg_portnumber:",port_number,"\n"
 			user.port_number.to_i == port_number.to_i
 		end
 		return step2
-		print "step2:",step2,"\n"
 	end
 	# modified by yyynishi
 	#def find_by_mac(mac_address)

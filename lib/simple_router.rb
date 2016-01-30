@@ -133,11 +133,11 @@ class SimpleRouter < Trema::Controller
   # rubocop:disable MethodLength
   # rubocop:disable AbcSize
   def forward(dpid, message)
-    print "Source MAC: ", message.source_mac , "\n"
-    print "Destination MAC: ", message.destination_mac , "\n"
-    print "Source IP: ", message.source_ip_address , "\n"
-    print "Destination IP: ", message.destination_ip_address , "\n"
-    print "User id(ToS): ", message.ip_type_of_service , "\n" ,"\n","\n"
+#    print "Source MAC: ", message.source_mac , "\n"
+#    print "Destination MAC: ", message.destination_mac , "\n"
+#    print "Source IP: ", message.source_ip_address , "\n"
+#    print "Destination IP: ", message.destination_ip_address , "\n"
+#    print "User id(ToS): ", message.ip_type_of_service , "\n" ,"\n","\n"
     ###modified by tinygoodcheese
     next_hop = resolve_next_hop(dpid,message.destination_ip_address)
 ##   next_hop = resolve_next_hop(message.destination_ip_address)
@@ -160,11 +160,17 @@ class SimpleRouter < Trema::Controller
     ### modified by yyynishi
     elsif message.ip_type_of_service != 0x00 then
     #elsif message.ip_type_of_service != 0x01 then
-      port = @users.find_by_user_id_and_ip(user_id: message.ip_type_of_service,
-                                           ip_address: next_hop).port_number
+  ##  print "dpid :", dpid ,"\n"
+  ##  print "ip_type_of_service :", message.ip_type_of_service ,"\n"
+  ##  print "next_hop :", next_hop ,"\n"
+  print "dpid:::",dpid,",",message.source_ip_address,"\n"
+
+      port = @users.find_by_user_id_and_ip(message.ip_type_of_service,
+                                           next_hop).port_number
 
       interface = @interfaces.find_by(dpid: dpid,
-                                      port_number: port)
+                                      port_number: port.to_i)
+      print "forward interface:", interface, "\n" "\n" 
       ##interface = @interfaces.find_by(mac_address: dest_mac)
       ###
     end
@@ -173,10 +179,21 @@ class SimpleRouter < Trema::Controller
 
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
+      print "inarp","\n"
+      print "Source MAC: ", message.source_mac , "\n"
+      print "Destination MAC: ", message.destination_mac , "\n"
+      print "Source IP: ", message.source_ip_address , "\n"
+      print "Destination IP: ", message.destination_ip_address , "\n"
+      print "dpid:" , dpid , "\n"
+  
       ### modified by tinygoodcheese
-      user_id = @users.find_by_ip_and_port(ip_address: message.destination_ip_address,
-                               port_number: interface.port_number).user_id
-      actions = [Pio::OpenFlow10::SetTos.new(tos: user_id),
+      if message.ip_type_of_service == 0x00 then
+       user_id = @users.find_by_ip_and_port(message.destination_ip_address,
+                                message.in_port).user_id.hex
+      else 
+       user_id = 0x00
+      end
+      actions = [Pio::OpenFlow10::SetTos.new(user_id),
                  SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
                  SendOutPort.new(interface.port_number)]
@@ -244,26 +261,35 @@ class SimpleRouter < Trema::Controller
     @unresolved_packet_queue[destination_ip].each do |each|
     in_port = @unresolved_packet_port_queue[destination_ip][unsent_packet_number]
       ### modified by yyynishi
-      print "in_port:", in_port , "\n"
-      print "data_source_ip_address:", each.source_ip_address,"\n" "\n"
-
-
+  
+        if each.ip_type_of_service == 0x00 then
       user_id = @users.find_by_ip_and_port(each.source_ip_address,
                                in_port).user_id.hex
+    else 
+      
+      user_id  = 0x00
 
+    end
 
       unsent_packet_number = unsent_packet_number + 1       
       
-      print 'user_id:', user_id, "\n"
-      @users.list.each do |user|
-        print "user:" ,user,"\n"
-        print "id:" ,user.user_id,"\n"
-        print "ip_address", user.ip_address, "\n"
-        print "port:" , user.port_number, "\n"
-      end      
+  ##    print 'user_id:', user_id, "\n"
+      ##@users.list.each do |user|
+  ##      print "user:" ,user,"\n"
+  ##      print "id:" ,user.user_id,"\n"
+  ##      print "ip_address", user.ip_address, "\n"
+  ##      print "port:" , user.port_number, "\n"
+      ##end  
+      print "Source MAC: ", each.source_mac , "\n"
+      print "Destination MAC: ", each.destination_mac , "\n"
+      print "Source IP: ", each.source_ip_address , "\n"
+      print "Destination IP: ", each.destination_ip_address , "\n"
+      print "dpid:" , dpid , "\n"
+     # print "User id(ToS): ", each.ip_type_of_service , "\n" ,"\n","\n"
+
       ### modified by tinygoodcheese
       rewrite_mac =
-         [Pio::OpenFlow10::SetTos.new(tos: user_id),
+         [Pio::OpenFlow10::SetTos.new(user_id),
          SetDestinationMacAddress.new(arp_reply.sender_hardware_address),
          SetSourceMacAddress.new(interface.mac_address),
          SendOutPort.new(interface.port_number)]

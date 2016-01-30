@@ -13,8 +13,8 @@ class User
 	def initialize(options)
 		@user_id = options.fetch(:user_id)
 		@ip_address = IPv4Address.new(options.fetch(:ip_address))
-		@dpid = Mac.new(options.fetch(:dpid))
-		@port_number = Mac.new(options.fetch(:port_number))
+		@dpid = options.fetch(:dpid)
+		@port_number = options.fetch(:port_number)
 	end
 end
 

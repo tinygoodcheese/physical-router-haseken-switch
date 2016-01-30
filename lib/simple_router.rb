@@ -248,8 +248,8 @@ class SimpleRouter < Trema::Controller
       print "data_source_ip_address:", each.source_ip_address,"\n" "\n"
 
 
-      user_id = @users.find_by_ip_and_port(ip_address: each.source_ip_address,
-                               port_number: in_port)
+      user_id = @users.find_by_ip_and_port(each.source_ip_address,
+                               in_port).user_id.hex
 
 
       unsent_packet_number = unsent_packet_number + 1       

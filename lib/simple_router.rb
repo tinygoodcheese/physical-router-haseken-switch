@@ -36,6 +36,7 @@ class SimpleRouter < Trema::Controller
     when Arp::Reply
       packet_in_arp_reply dpid, message
     when Parser::IPv4Packet
+      print "\n","ipv4packet_in ","dpid: ",dpid
       packet_in_ipv4 dpid, message
     else
       logger.debug "Dropping unsupported packet type: #{message.data.inspect}"
@@ -163,14 +164,14 @@ class SimpleRouter < Trema::Controller
   ##  print "dpid :", dpid ,"\n"
   ##  print "ip_type_of_service :", message.ip_type_of_service ,"\n"
   ##  print "next_hop :", next_hop ,"\n"
-  print "dpid:::",dpid,",",message.source_ip_address,"\n"
+  #print "dpid:::",dpid,",",message.source_ip_address,"\n"
 
       port = @users.find_by_user_id_and_ip(message.ip_type_of_service,
                                            next_hop).port_number
 
       interface = @interfaces.find_by(dpid: dpid,
                                       port_number: port.to_i)
-      print "forward interface:", interface, "\n" "\n" 
+     # print "forward interface:", interface, "\n" "\n" 
       ##interface = @interfaces.find_by(mac_address: dest_mac)
       ###
     end
@@ -179,10 +180,10 @@ class SimpleRouter < Trema::Controller
 
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
-      print "inarp","\n"
-      print "Source MAC: ", message.source_mac , "\n"
-      print "Destination MAC: ", message.destination_mac , "\n"
-      print "Source IP: ", message.source_ip_address , "\n"
+#      print "inarp","\n"
+#      print "Source MAC: ", message.source_mac , "\n"
+#      print "Destination MAC: ", message.destination_mac , "\n"
+      print "\n","Source IP: ", message.source_ip_address , "\n"
       print "Destination IP: ", message.destination_ip_address , "\n"
       print "dpid:" , dpid , "\n"
   
@@ -197,7 +198,7 @@ class SimpleRouter < Trema::Controller
                  SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
                  SendOutPort.new(interface.port_number)]
-      send_flow_mod_add(dpid, match: ExactMatch.new(message), instructions: Apply.new(actions))
+      ##send_flow_mod_add(dpid, match: ExactMatch.new(message), instructions: Apply.new(actions))
       send_packet_out(dpid, raw_data: message.raw_data, actions: actions)
     else
       send_later(dpid,
@@ -280,9 +281,9 @@ class SimpleRouter < Trema::Controller
   ##      print "ip_address", user.ip_address, "\n"
   ##      print "port:" , user.port_number, "\n"
       ##end  
-      print "Source MAC: ", each.source_mac , "\n"
-      print "Destination MAC: ", each.destination_mac , "\n"
-      print "Source IP: ", each.source_ip_address , "\n"
+ #     print "Source MAC: ", each.source_mac , "\n"
+ #     print "Destination MAC: ", each.destination_mac , "\n"
+      print "\n", "Source IP: ", each.source_ip_address , "\n"
       print "Destination IP: ", each.destination_ip_address , "\n"
       print "dpid:" , dpid , "\n"
      # print "User id(ToS): ", each.ip_type_of_service , "\n" ,"\n","\n"

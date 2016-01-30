@@ -1,4 +1,4 @@
-wrequire 'pio'
+require 'pio'
 
 # Router network interface
 class Interface

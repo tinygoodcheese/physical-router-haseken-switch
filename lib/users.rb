@@ -43,6 +43,27 @@ class Users
 	    end.first
 	end
 
+	def find_by_user_id_and_ip(user_id, ip_address)
+		step1 = 
+		@list.find_all do |user|
+			user.user_id == user_id
+		end
+		step2 =
+		step1.find do |user|
+			user.ip_address == ip_address
+		end
+	end
+
+	def find_by_ip_and_port(ip_address, port_number)
+		step1 = 
+		@list.find_all do |user|
+			user.ip_address == ip_address
+		end
+		step2 =
+		step1.find do |user|
+			user.port_number == port_number
+		end
+	end
 	# modified by yyynishi
 	#def find_by_mac(mac_address)
 	#	@list.find do |user|

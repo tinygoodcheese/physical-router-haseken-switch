@@ -15,6 +15,7 @@ class SimpleRouter < Trema::Controller
     @arp_table = ArpTable.new
     @routing_table = RoutingTable.new(Configuration::ROUTES)
     @unresolved_packet_queue = Hash.new { [] }
+    @unresolved_packet_port_queue = Hash.new { [] }
 ### modified by tinygoodcheese
     @users = Users.new('users.conf')
 ###
@@ -102,7 +103,10 @@ class SimpleRouter < Trema::Controller
                                                 port_number: message.in_port),
                  ## interface: @interfaces.find_by(port_number: message.in_port),
                  destination_ip: message.source_ip_address,
-                 data: create_icmp_reply(icmp_request))
+                 data: create_icmp_reply(icmp_request),
+                 ### modified by tgc
+                 port_number: message.in_port
+                 )
     end
   end
   # rubocop:enable MethodLength
@@ -156,8 +160,8 @@ class SimpleRouter < Trema::Controller
     ### modified by yyynishi
     elsif message.ip_type_of_service != 0x00 then
     #elsif message.ip_type_of_service != 0x01 then
-      port = @users.find_by(user_id: message.ip_type_of_service,
-                            ip_address: next_hop).port_number
+      port = @users.find_by_user_id_and_ip(user_id: message.ip_type_of_service,
+                                           ip_address: next_hop).port_number
 
       interface = @interfaces.find_by(dpid: dpid,
                                       port_number: port)
@@ -170,8 +174,8 @@ class SimpleRouter < Trema::Controller
     arp_entry = @arp_table.lookup(next_hop)
     if arp_entry
       ### modified by tinygoodcheese
-      user_id = @users.find_by(ip_address: message.destination_ip_address,
-                               mac_address: interface.mac_address).user_id
+      user_id = @users.find_by_ip_and_port(ip_address: message.destination_ip_address,
+                               port_number: interface.port_number).user_id
       actions = [Pio::OpenFlow10::SetTos.new(tos: user_id),
                  SetSourceMacAddress.new(interface.mac_address),
                  SetDestinationMacAddress.new(arp_entry.mac_address),
@@ -182,7 +186,8 @@ class SimpleRouter < Trema::Controller
       send_later(dpid,
                  interface: interface,
                  destination_ip: next_hop,
-                 data: message.data)
+                 data: message.data,
+                 port_number: message.in_port)
     end
   end
   # rubocop:enable AbcSize
@@ -228,34 +233,34 @@ class SimpleRouter < Trema::Controller
   def send_later(dpid, options)
     destination_ip = options.fetch(:destination_ip)
     @unresolved_packet_queue[destination_ip] += [options.fetch(:data)]
+    ### modified by tgc
+    @unresolved_packet_port_queue[destination_ip] += [options.fetch(:port_number)]
     send_arp_request(dpid, destination_ip, options.fetch(:interface))
   end
 
   def flush_unsent_packets(dpid, arp_reply, interface)
     destination_ip = arp_reply.sender_protocol_address
+    unsent_packet_number = 0
     @unresolved_packet_queue[destination_ip].each do |each|
-      ### modified by tinygoodcheese
-
-
-      print 'dpid:', dpid, "\n"
-      print 'destination_ip:', destination_ip, "\n"
-      print 'interface.mac_address:', interface.mac_address, "\n"
-      @users.list.each do |user|
-        print 'user:', user, "\n"
-      end
-
+    in_port = @unresolved_packet_port_queue[destination_ip][unsent_packet_number]
       ### modified by yyynishi
-      user_id = @users.find_by(ip_address: each.source_ip_address,
-                               mac_address: each.source_mac)
-      
+      print "in_port:", in_port , "\n"
+      print "data_source_ip_address:", each.source_ip_address,"\n" "\n"
 
+
+      user_id = @users.find_by_ip_and_port(ip_address: each.source_ip_address,
+                               port_number: in_port)
+
+
+      unsent_packet_number = unsent_packet_number + 1       
       
       print 'user_id:', user_id, "\n"
-      print 'source_ip_address', each.source_ip_address, "\n"
-      print 'source_mac', each.source_mac, "\n"
-
-
-      
+      @users.list.each do |user|
+        print "user:" ,user,"\n"
+        print "id:" ,user.user_id,"\n"
+        print "ip_address", user.ip_address, "\n"
+        print "port:" , user.port_number, "\n"
+      end      
       ### modified by tinygoodcheese
       rewrite_mac =
          [Pio::OpenFlow10::SetTos.new(tos: user_id),
@@ -265,6 +270,8 @@ class SimpleRouter < Trema::Controller
       send_packet_out(dpid, raw_data: each.to_binary_s, actions: rewrite_mac)
     end
     @unresolved_packet_queue[destination_ip] = []
+    @unresolved_packet_port_queue[destination_ip] = []
+
   end
 
   def send_arp_request(dpid, destination_ip, interface)

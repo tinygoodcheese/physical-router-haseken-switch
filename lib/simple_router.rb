@@ -13,6 +13,15 @@ class SimpleRouter < Trema::Controller
     load File.join(__dir__, '..', 'simple_router.conf')
     @interfaces = Interfaces.new(Configuration::INTERFACES)
     @arp_table = ArpTable.new
+
+    # arp_table update by yyynishi
+    @arp_table.update(3,
+                      IPv4Address.new('192.168.3.2'),
+                      Mac.new('08:00:27:75:b8:50'))
+    @arp_table.update(3,
+                      IPv4Address.new('192.168.4.2'),
+                      Mac.new('08:00:27:c4:c7:41'))
+
     @routing_table = RoutingTable.new(Configuration::ROUTES)
     @unresolved_packet_queue = Hash.new { [] }
     @unresolved_packet_port_queue = Hash.new { [] }
@@ -32,11 +41,24 @@ class SimpleRouter < Trema::Controller
 
     case message.data
     when Arp::Request
+      print "\n","arp_request_packet_in", "\n"
+      print "dpid: ",dpid, "\n"
+      print "source ip:", message.sender_protocol_address, "\n"
+      print "destination ip:", message.target_protocol_address, "\n"
+
       packet_in_arp_request dpid, message.in_port, message.data
     when Arp::Reply
+      print "\n","arp_request_packet_in", "\n"
+      print "dpid: ",dpid, "\n"
+      print "source ip:", message.sender_protocol_address, "\n"
+      print "destination ip:", message.target_protocol_address, "\n"
+
       packet_in_arp_reply dpid, message
     when Parser::IPv4Packet
-      print "\n","ipv4packet_in ","dpid: ",dpid
+      print "\n","ipv4packet_in", "\n"
+      print "dpid: ",dpid, "\n"
+      print "source ip:", message.source_ip_address, "\n"
+      print "destination ip:", message.destination_ip_address, "\n"
       packet_in_ipv4 dpid, message
     else
       logger.debug "Dropping unsupported packet type: #{message.data.inspect}"
@@ -183,9 +205,9 @@ class SimpleRouter < Trema::Controller
 #      print "inarp","\n"
 #      print "Source MAC: ", message.source_mac , "\n"
 #      print "Destination MAC: ", message.destination_mac , "\n"
-      print "\n","Source IP: ", message.source_ip_address , "\n"
-      print "Destination IP: ", message.destination_ip_address , "\n"
-      print "dpid:" , dpid , "\n"
+#      print "\n","Source IP: ", message.source_ip_address , "\n"
+#      print "Destination IP: ", message.destination_ip_address , "\n"
+#      print "dpid:" , dpid , "\n"
   
       ### modified by tinygoodcheese
       if message.ip_type_of_service == 0x00 then
@@ -264,6 +286,8 @@ class SimpleRouter < Trema::Controller
       ### modified by yyynishi
   
         if each.ip_type_of_service == 0x00 then
+          print "source_ip",each.source_ip_address,"\n"
+          print "in_port",in_port,"\n"
       user_id = @users.find_by_ip_and_port(each.source_ip_address,
                                in_port).user_id.hex
     else 

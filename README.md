@@ -9,7 +9,7 @@
   - 物理ルータとして機能
 
 ## アップロード先
-  長谷川研究室の Web サーバを利用した
+  長谷川研究室の Web サーバを利用した  
   URL : http://www-imase.ist.osaka-u.ac.jp/ensyu2_vm.zip 
 
 ## デモの再現方法

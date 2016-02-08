@@ -23,16 +23,18 @@
 
 ### 仮想マシン初期設定
 
-#### 仮想マシン1
-* 注意点  
-  ~/Documents/physical-router-haseken-switch 配下が使用するOpenflowコントローラのソースコードである
-* 初期設定(confファイルなど)
-  - __trema.conf__  
-  変更無し
-  - __simple_router.conf__  
-  port:3 を持つエントリの mac_address を接続先(物理トポロジとして利用するマシンの)インタフェースの MAC アドレスに書き換える
-  - __users.conf__  
-  変更無し
+#### 仮想マシン1 
+  ※ ~/Documents/physical-router-haseken-switch 配下が使用するOpenflowコントローラのソースコードである
+  * __trema.conf__  
+   - 変更無し
+  * __simple_router.conf__  
+   - port:3 を持つエントリの mac_address を接続先(物理トポロジとして利用するマシンの)インタフェースの MAC アドレスに書き換える
+  * __users.conf__  
+   - 変更無し
+
+
+#### 仮想マシン2
+*
 
 
 

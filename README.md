@@ -30,10 +30,10 @@
   * __simple_router.conf__  
    - port:3 を持つエントリ２つの mac_address を対応する接続先(仮想マシン2を導入したマシンの)インタフェースの MAC アドレスに書き換える
 
-      {dpid: 0x1,
-      port: 3,
-      mac_address: <__192.168.3.2を持つインタフェースのMAC アドレス__>
-      ・・・}
+          {dpid: 0x1,
+          port: 3,
+          mac_address: <__192.168.3.2を持つインタフェースのMAC アドレス__>
+          ・・・}
 
   * __users.conf__  
    - 変更無し

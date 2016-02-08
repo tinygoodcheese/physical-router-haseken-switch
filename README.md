@@ -4,12 +4,13 @@
 ## 成果物一覧
 
 * __仮想マシン1__ : ensyuuVB1.ova
-  - ホスト、Openflowスイッチ、コントローラとして機能
+  - ホスト、Openflow スイッチ、コントローラとして機能
 * __仮想マシン2__ : router.ova
   - 物理ルータとして機能
 
-## ダウンロード先URL
-  
+## アップロード先
+  長谷川研究室の Web サーバを利用した
+  URL : http://www-imase.ist.osaka-u.ac.jp/ensyu2_vm.zip 
 
 ## デモの再現方法
 

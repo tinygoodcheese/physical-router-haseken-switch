@@ -29,7 +29,7 @@
    - 変更無し
   * __simple_router.conf__  
    - port:3 を持つエントリ２つの mac_address を対応する接続先(仮想マシン2を導入したマシンの)インタフェースの MAC アドレスに書き換える
-   - 書き換え箇所 
+   - 
 ```
 {dpid: 0x1,
 port: 3,
@@ -50,12 +50,37 @@ mac_address: <192.168.4.2を持つインタフェースのMACアドレス>
 #### 仮想マシン2
  * arp テーブルの書き換え
   - 対応する接続先(仮想マシン1を導入したマシンの)インタフェースの MAC アドレスを arp テーブルに追加
-  - 追加方法 
+  - 
 ```
 sudo arp -s 192.168.3.1 <192.168.3.1を持つインタフェースの MAC アドレス>  
 sudo arp -s 192.168.4.1 <192.168.4.1を持つインタフェースの MAC アドレス>
 ```
 
 
+### デモ
+　
+#### 仮想マシン1
+ * OpenVswitch、Openflowコントローラ、ホストの起動
+  - 
+  ``` 
+  bin/trema run lib/simple_router.rb -c trema.conf
+  ```
+ * 仮想マシンのインタフェースとOpenVswitchのインタフェースをブリッジ接続
+  -
+  ```
+  ./add_port.sh
+  ```
+ * ターミナルを４つ起動し、それぞれのホスト(host1,host2,host3,host4)のコマンドラインを開く
+  ```
+  ./bin/trema netns host1
+  ```
+ * host3, host4 について、tcpdumpを行う
+  ```
+  ./tcpdump.sh
+  ```
+ * host1より、宛先IPアドレス(192.168.2.1)を指定しpingを送信し、host3のみにpingが到着したことを確認
+  ```
+  ping -c10 192.168.2.1
+  ```
 
 

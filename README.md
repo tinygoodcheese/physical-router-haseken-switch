@@ -60,25 +60,23 @@ sudo arp -s 192.168.4.1 <192.168.4.1を持つインタフェースの MAC アド
 ### デモ
 　
 #### 仮想マシン1
- * OpenVswitch、Openflowコントローラ、ホストの起動
-  - 
+ * OpenVswitch、Openflowコントローラ、ホストの起動  
   ``` 
-  bin/trema run lib/simple_router.rb -c trema.conf
+  bin/trema run lib/simple_router.rb -c trema.conf  
   ```
- * 仮想マシンのインタフェースとOpenVswitchのインタフェースをブリッジ接続
-  -
+ * 仮想マシンのインタフェースとOpenVswitchのインタフェースをブリッジ接続  
   ```
   ./add_port.sh
   ```
- * ターミナルを４つ起動し、それぞれのホスト(host1,host2,host3,host4)のコマンドラインを開く
+ * ターミナルを４つ起動し、それぞれのホスト(host1,host2,host3,host4)のコマンドラインを開く  
   ```
   ./bin/trema netns host1
   ```
- * host3, host4 について、tcpdumpを行う
+ * host3, host4 について、tcpdumpを行う  
   ```
   ./tcpdump.sh
   ```
- * host1より、宛先IPアドレス(192.168.2.1)を指定しpingを送信し、host3のみにpingが到着したことを確認
+ * host1より、宛先IPアドレス(192.168.2.1)を指定しpingを送信し、host3のみにpingが到着したことを確認  
   ```
   ping -c10 192.168.2.1
   ```

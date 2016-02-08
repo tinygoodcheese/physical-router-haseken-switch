@@ -21,9 +21,12 @@
   * VMファイルのインタフェースと Virtual Box ホストマシンのインタフェースをブリッジ接続しておく
 
 
-### 初期設定
-* __仮想マシン1__  
-  ※ ~/Documents/physical-router-haseken-switch 配下が使用するOpenflowコントローラのソースコードである  
+### 仮想マシン初期設定
+
+#### 仮想マシン1
+* 注意点  
+  ~/Documents/physical-router-haseken-switch 配下が使用するOpenflowコントローラのソースコードである
+* 初期設定(confファイルなど)
   - __trema.conf__  
   変更無し
   - __simple_router.conf__  
